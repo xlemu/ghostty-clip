@@ -21,7 +21,7 @@ Fixes the copy-paste problem with [Claude Code](https://claude.ai/claude-code) a
 Requires macOS 13+ and Xcode Command Line Tools (`xcode-select --install`).
 
 ```
-git clone https://github.com/<owner>/ghostty-clip
+git clone https://github.com/xlemu/ghostty-clip
 cd ghostty-clip
 ./install.sh
 ```
