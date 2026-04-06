@@ -16,6 +16,8 @@ func processClipboard() {
         return
     }
 
+    try? FileManager.default.removeItem(atPath: path)
+
     let cleaned = cleanText(text)
 
     pasteboard.clearContents()
