@@ -113,6 +113,110 @@ import Testing
     #expect(!result.hasSuffix("\n"))
 }
 
+@Test func preservesCodeWithoutFences() {
+    let input = "  def fibonacci(n):\n      if n <= 1:\n          return n\n      a, b = 0, 1\n      return b\n"
+    let result = cleanText(input)
+    #expect(result == "def fibonacci(n):\n    if n <= 1:\n        return n\n    a, b = 0, 1\n    return b\n")
+}
+
+@Test func doesNotJoinAfterCodeTerminators() {
+    let input = "  function hello():\n  world\n"
+    let result = cleanText(input)
+    #expect(result == "function hello():\nworld\n")
+}
+
+@Test func doesNotJoinIndentedLines() {
+    let input = "  first line\n      indented line\n  back to normal\n"
+    let result = cleanText(input)
+    #expect(result.contains("first line\n"))
+    #expect(result.contains("    indented line\n"))
+}
+
+@Test func stillUnwrapsProseWithoutFences() {
+    let input = "  This is a long paragraph that was\n  wrapped by the terminal at some\n  arbitrary width.\n"
+    let result = cleanText(input)
+    #expect(result == "This is a long paragraph that was wrapped by the terminal at some arbitrary width.\n")
+}
+
+// --- Real-world Claude Code output patterns (from terminal screenshots) ---
+
+@Test func realWorldNumberedListWithWrappedItems() {
+    // From screenshot: numbered list where items wrap to next line with extra indent
+    let input = """
+      1. **Shorter, punchier.** You cut the "merchants need
+      does.
+      2. **No over-explaining.** You dropped implementation
+      "Pashov audit". The reviewer doesn't need that in
+      3. **Functions listed cleanly** on their own line, no
+      4. **Each bullet is one thing**, clearly separated. N
+
+    """
+    let result = cleanText(input)
+    // Each numbered item should stay separate, wrapped continuations should join
+    #expect(result.hasPrefix("1. **Shorter, punchier.**"))
+    #expect(result.contains("2. **No over-explaining.**"))
+    #expect(result.contains("3. **Functions listed cleanly**"))
+    #expect(result.contains("4. **Each bullet is one thing**"))
+}
+
+@Test func realWorldProseFollowedByList() {
+    // From screenshot: "Yes. Yours is better because:" then a numbered list
+    let input = "  Yes. Yours is better because:\n\n  1. Shorter\n  2. Punchier\n"
+    let result = cleanText(input)
+    #expect(result == "Yes. Yours is better because:\n\n1. Shorter\n2. Punchier\n")
+}
+
+@Test func realWorldProseAfterList() {
+    // From screenshot: list items followed by standalone prose
+    let input = "  5. **Used some dashes** but sparingly and well.\n\n  I'll match this style going forward.\n"
+    let result = cleanText(input)
+    #expect(result.contains("5. **Used some dashes**"))
+    #expect(result.contains("\n\nI'll match this style going forward."))
+}
+
+@Test func realWorldDashListWithWrappedItems() {
+    // Bullet list where items wrap across lines
+    let input = "  - Mixed prose and code (no fences) in the same\n    selection\n  - JavaScript/Go/Rust style code\n  - Nested bullet points\n"
+    let result = cleanText(input)
+    // The wrapped "selection" line has leading whitespace after strip, stays separate
+    #expect(result.contains("- Mixed prose and code"))
+    #expect(result.contains("- JavaScript/Go/Rust"))
+    #expect(result.contains("- Nested bullet points"))
+}
+
+@Test func realWorldMixedProseAndCode() {
+    // Prose paragraph, then inline code-like content, then more prose
+    let input = "  Run the install with `./install.sh` and then\n  verify it works by pressing Cmd+Shift+C.\n\n  The binary is only 63KB.\n"
+    let result = cleanText(input)
+    #expect(result.hasPrefix("Run the install with `./install.sh` and then verify it works by pressing Cmd+Shift+C."))
+    #expect(result.contains("\n\nThe binary is only 63KB."))
+}
+
+@Test func realWorldJavaScriptCode() {
+    let input = "  function greet(name) {\n      console.log(`Hello ${name}`);\n      return true;\n  }\n"
+    let result = cleanText(input)
+    #expect(result == "function greet(name) {\n    console.log(`Hello ${name}`);\n    return true;\n}\n")
+}
+
+@Test func realWorldGoCode() {
+    let input = "  func main() {\n      fmt.Println(\"hello\")\n  }\n"
+    let result = cleanText(input)
+    #expect(result == "func main() {\n    fmt.Println(\"hello\")\n}\n")
+}
+
+@Test func realWorldBoldAndInlineCode() {
+    // Bold text and inline code shouldn't affect cleaning
+    let input = "  **Important:** Use `Cmd+Shift+C` instead of\n  the normal `Cmd+C` for clean copy.\n"
+    let result = cleanText(input)
+    #expect(result == "**Important:** Use `Cmd+Shift+C` instead of the normal `Cmd+C` for clean copy.\n")
+}
+
+@Test func realWorldMultipleParagraphs() {
+    let input = "  First paragraph that wraps across\n  two lines in the terminal.\n\n  Second paragraph also wraps\n  across lines.\n\n  Third short one.\n"
+    let result = cleanText(input)
+    #expect(result == "First paragraph that wraps across two lines in the terminal.\n\nSecond paragraph also wraps across lines.\n\nThird short one.\n")
+}
+
 @Test func detectsGhosttySelectionPath() {
     let path = "/private/var/folders/f4/g4kyjvqj2gq4qgw35njypxjm0000gn/T/mJi1pPsplKktRlE6Is7AEQ/selection.txt"
     #expect(isGhosttySelectionPath(path) == true)

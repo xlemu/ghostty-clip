@@ -56,6 +56,12 @@ func cleanText(_ input: String) -> String {
             continue
         }
 
+        if line.first?.isWhitespace == true || !isProseContext(previous: paragraphBuffer.last ?? result.last) {
+            flushParagraph()
+            result.append(line)
+            continue
+        }
+
         paragraphBuffer.append(line)
     }
 
@@ -68,6 +74,16 @@ func cleanText(_ input: String) -> String {
     }
 
     return output
+}
+
+private let codeTerminators: Set<Character> = [":", "{", "(", "[", ";", ",", "\\"]
+
+func isProseContext(previous: String?) -> Bool {
+    guard let prev = previous, !prev.isEmpty else { return true }
+    if let last = prev.last, codeTerminators.contains(last) {
+        return false
+    }
+    return true
 }
 
 func isStructuralLine(_ line: String) -> Bool {
